@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './lib/store';
 import { ToastProvider } from './lib/toast';
 import { CurrencyProvider } from './lib/currency';
 
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import POS from './pages/POS';
@@ -16,9 +17,9 @@ import ServerStatus from './pages/ServerStatus';
 function RequireAuth({ children, roles }) {
   const { user, loading } = useAuth();
   if (loading) return <FullScreenSpinner />;
-  if (!user)   return <Navigate to="/login" replace />;
+  if (!user)   return <Navigate to="/landing" replace />;
   if (roles && !roles.includes(user.role))
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   return children;
 }
 
@@ -33,7 +34,7 @@ function FullScreenSpinner() {
 function HomeRedirect() {
   const { user, loading } = useAuth();
   if (loading) return <FullScreenSpinner />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/landing" replace />;
   if (user.role === 'kitchen') return <Navigate to="/kds" replace />;
   if (user.role === 'admin')   return <Navigate to="/admin" replace />;
   return <Navigate to="/pos" replace />;
@@ -46,6 +47,7 @@ export default function App() {
         <ToastProvider>
           <Routes>
             <Route path="/"            element={<HomeRedirect />} />
+            <Route path="/landing"    element={<Landing />} />
             <Route path="/login"       element={<Login />} />
             <Route path="/signup"      element={<Signup />} />
 

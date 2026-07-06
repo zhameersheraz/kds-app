@@ -1,4 +1,5 @@
-// KDS - kitchen display. Three columns, paper-receipt style cards.
+// KDS - kitchen display. Three status rails (pending / preparing / ready) side-by-side on wide screens,
+// stacked on tablets/mobile. Each rail is its own column with a header.
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
@@ -75,33 +76,50 @@ export default function KDS() {
         }
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 space-y-5">
-        <Column
-          title="Pending"
-          count={counts.pending}
-          accent="opacity-60"
-        >
-          <Grid items={grouped.pending} onStatus={setStatus} />
-        </Column>
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Rail
+            title="Pending"
+            count={counts.pending}
+            tone="muted"
+          >
+            {grouped.pending.length === 0
+              ? <RailEmpty label="Nothing waiting" />
+              : grouped.pending.map((o) => (
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                ))
+            }
+          </Rail>
 
-        <Column
-          title="Preparing"
-          count={counts.preparing}
-          accent=""
-        >
-          <Grid items={grouped.preparing} onStatus={setStatus} />
-        </Column>
+          <Rail
+            title="Preparing"
+            count={counts.preparing}
+            tone="default"
+          >
+            {grouped.preparing.length === 0
+              ? <RailEmpty label="Nothing on the stove" />
+              : grouped.preparing.map((o) => (
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                ))
+            }
+          </Rail>
 
-        <Column
-          title="Ready to serve"
-          count={counts.ready}
-          accent="text-accent"
-        >
-          <Grid items={grouped.ready} onStatus={setStatus} />
-        </Column>
+          <Rail
+            title="Ready to serve"
+            count={counts.ready}
+            tone="accent"
+          >
+            {grouped.ready.length === 0
+              ? <RailEmpty label="Nothing on the pass" />
+              : grouped.ready.map((o) => (
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                ))
+            }
+          </Rail>
+        </div>
 
         {orders.length === 0 ? (
-          <div className="card p-12 text-center opacity-50">
+          <div className="card p-10 mt-4 text-center opacity-50">
             No active orders. The next ticket will appear here automatically.
           </div>
         ) : null}
@@ -115,26 +133,28 @@ function byAge(a, b) {
          new Date(b.created_at.replace(' ', 'T') + 'Z');
 }
 
-function Column({ title, count, accent, children }) {
+function Rail({ title, count, tone, children }) {
+  const headTone =
+    tone === 'accent' ? 'text-accent' :
+    tone === 'muted'  ? 'opacity-60'   :
+                        '';
   return (
-    <section>
-      <header className="flex items-baseline gap-3 mb-3 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
-        <h2 className={'font-display text-xl ' + accent}>{title}</h2>
-        <span className="text-xs opacity-50 mono tabular-nums">{count}</span>
+    <section className="flex flex-col min-w-0 bg-paper/40 border border-line rounded-md">
+      <header className="flex items-baseline justify-between gap-3 px-3 py-2 border-b border-line sticky top-0 bg-paper/95 backdrop-blur">
+        <h2 className={'font-display text-lg ' + headTone}>{title}</h2>
+        <span className="text-xs opacity-60 mono tabular-nums">{count} {count === 1 ? 'ticket' : 'tickets'}</span>
       </header>
-      {children}
+      <div className="flex-1 p-2 sm:p-3 space-y-3 min-h-[120px]">
+        {children}
+      </div>
     </section>
   );
 }
 
-function Grid({ items, onStatus }) {
-  if (items.length === 0)
-    return <div className="text-sm opacity-40 pl-2">Nothing here right now.</div>;
+function RailEmpty({ label }) {
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-      {items.map((o) => (
-        <OrderCard key={o.id} order={o} onStatus={onStatus} />
-      ))}
+    <div className="border border-dashed border-line rounded p-4 text-center text-xs opacity-40">
+      {label}
     </div>
   );
 }

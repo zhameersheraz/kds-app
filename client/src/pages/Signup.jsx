@@ -1,5 +1,6 @@
 // Signup page - two-column layout: illustration on the left, form on the right.
 // Open registration. First user becomes admin automatically.
+// v6.1: brand link points to landing; show/hide password toggle.
 
 import React, { useState } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
@@ -55,7 +56,7 @@ export default function Signup() {
       {/* Left: visual hero */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-ink text-paper relative overflow-hidden">
         <div className="relative z-10">
-          <Link to="/login" className="inline-block">
+          <Link to="/landing" className="inline-block">
             <div className="font-display text-2xl font-bold tracking-tight">
               <span className="inline-block border-l-2 border-accent pl-2">KDS</span>
               <span className="ml-2 opacity-50 text-base">/ Kitchen Display</span>
@@ -80,7 +81,7 @@ export default function Signup() {
       <div className="flex items-center justify-center px-4 py-10 paper-grain">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-6">
-            <Link to="/login" className="font-display text-2xl font-bold tracking-tight">
+            <Link to="/landing" className="font-display text-2xl font-bold tracking-tight">
               <span className="inline-block border-l-2 border-accent pl-2">KDS</span>
             </Link>
           </div>

@@ -1,9 +1,8 @@
-// Login page - clean monochrome. Signup is intentionally hidden; admins can
-// create accounts at /signup directly.
-// v6: removed theme toggle, added show/hide password button.
+// Login page - clean monochrome. Shows Create-account link back.
+// v6.1: restored "Create account" link, show/hide password button.
 
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/store';
 import { IconEye, IconEyeOff } from '../components/icons';
 
@@ -52,10 +51,10 @@ export default function Login() {
     <div className="min-h-screen grid place-items-center px-4 py-10 paper-grain">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-between mb-8">
-          <div className="font-display text-2xl font-bold tracking-tight">
+          <Link to="/landing" className="font-display text-2xl font-bold tracking-tight">
             <span className="inline-block border-l-2 border-accent pl-2">KDS</span>
             <span className="ml-2 opacity-50 text-base">/ Kitchen Display</span>
-          </div>
+          </Link>
         </div>
 
         <h1 className="font-display text-4xl mb-2">Sign in</h1>
@@ -108,6 +107,10 @@ export default function Login() {
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <p className="text-sm text-muted mt-6 text-center">
+          No account yet? <Link to="/signup" className="text-accent underline underline-offset-2">Create one</Link>
+        </p>
 
         <div className="my-8 border-t border-line" />
         <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts (click to fill)</div>

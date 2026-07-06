@@ -158,10 +158,10 @@ function seedIfEmpty() {
       { id: 'm10', name: 'Cola',                category: 'Drinks',  price: 65,  description: 'Ice-cold can',                                                  image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=600&fit=crop&auto=format' },
       { id: 'm11', name: 'Iced Tea',            category: 'Drinks',  price: 75,  description: 'House-brewed, sweet or unsweetened',                            image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=600&fit=crop&auto=format' },
       { id: 'm12', name: 'Lemonade',            category: 'Drinks',  price: 85,  description: 'Fresh-squeezed, with mint',                                     image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=600&fit=crop&auto=format' },
-      { id: 'm13', name: 'Iced Coffee',         category: 'Drinks',  price: 95,  description: 'Cold brew over ice',                                            image: 'https://images.unsplash.com/photo-1559526324-4af87eac9ae1?w=600&h=600&fit=crop&auto=format' },
+      { id: 'm13', name: 'Iced Coffee',         category: 'Drinks',  price: 95,  description: 'Cold brew over ice',                                            image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=600&h=600&fit=crop&auto=format' },
       // Desserts
       { id: 'm14', name: 'Chocolate Brownie',   category: 'Desserts',price: 140, description: 'Warm, fudge sauce, vanilla ice cream',                          image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format' },
-      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1533134242443-4ac7a6b250e1?w=600&h=600&fit=crop&auto=format' }
+      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&h=600&fit=crop&auto=format' }
     ];
     const tx = db.transaction((rows) => {
       for (const m of rows) insertItem.run(m.id, m.name, m.category, m.price, m.description, m.image);
@@ -184,9 +184,9 @@ function seedIfEmpty() {
       'm10': 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=600&fit=crop&auto=format',
       'm11': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=600&fit=crop&auto=format',
       'm12': 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=600&fit=crop&auto=format',
-      'm13': 'https://images.unsplash.com/photo-1559526324-4af87eac9ae1?w=600&h=600&fit=crop&auto=format',
+      'm13': 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=600&h=600&fit=crop&auto=format',
       'm14': 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format',
-      'm15': 'https://images.unsplash.com/photo-1533134242443-4ac7a6b250e1?w=600&h=600&fit=crop&auto=format'
+      'm15': 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&h=600&fit=crop&auto=format'
     };
     const updateImg = db.prepare('UPDATE menu_items SET image = ? WHERE id = ?');
     let updated = 0;
