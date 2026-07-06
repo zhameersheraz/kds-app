@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { useAuth } from '../lib/store';
 import { useToast } from '../lib/toast';
 import { useSocketEvent } from '../lib/useSocketEvent';
 import TopBar from '../components/TopBar';
@@ -10,6 +11,7 @@ import OrderCard from '../components/OrderCard';
 import { IconRefresh } from '../components/icons';
 
 export default function KDS() {
+  const { user } = useAuth();
   const toast = useToast();
   const [orders, setOrders] = useState([]);
 
@@ -86,7 +88,7 @@ export default function KDS() {
             {grouped.pending.length === 0
               ? <RailEmpty label="Nothing waiting" />
               : grouped.pending.map((o) => (
-                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} viewerRole={user?.role} />
                 ))
             }
           </Rail>
@@ -99,7 +101,7 @@ export default function KDS() {
             {grouped.preparing.length === 0
               ? <RailEmpty label="Nothing on the stove" />
               : grouped.preparing.map((o) => (
-                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} viewerRole={user?.role} />
                 ))
             }
           </Rail>
@@ -112,7 +114,7 @@ export default function KDS() {
             {grouped.ready.length === 0
               ? <RailEmpty label="Nothing on the pass" />
               : grouped.ready.map((o) => (
-                  <OrderCard key={o.id} order={o} onStatus={setStatus} />
+                  <OrderCard key={o.id} order={o} onStatus={setStatus} viewerRole={user?.role} />
                 ))
             }
           </Rail>

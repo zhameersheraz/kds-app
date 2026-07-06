@@ -1,5 +1,6 @@
 // KDS order card - paper-receipt aesthetic. Color coded by wait time only.
 // High contrast, no shadows, large table number for at-a-glance reading.
+// v6.3: respects viewer role - kitchen never sees a dead "Mark Served" button.
 
 import React, { useEffect, useState } from 'react';
 import { waitBucket, elapsedLabel } from '../lib/format';
@@ -15,7 +16,7 @@ function formatMoney(n, cur) {
   return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
 }
 
-export default function OrderCard({ order, onStatus }) {
+export default function OrderCard({ order, onStatus, viewerRole }) {
   const { cur } = useCurrency();
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -25,11 +26,23 @@ export default function OrderCard({ order, onStatus }) {
 
   const bucket = order.status === 'ready' ? 'fresh' : waitBucket(order.created_at);
 
-  const next = {
+  // Decide the next-step button based on viewer role.
+  // - kitchen: only pending -> preparing, preparing -> ready
+  // - server/admin: pending -> preparing, preparing -> ready, ready -> served
+  const kitchenAllowed = ['preparing', 'ready'];
+  const nextRaw = {
     pending:   'preparing',
     preparing: 'ready',
     ready:     'served'
   }[order.status];
+
+  const canActOnNext =
+    nextRaw &&
+    (viewerRole === 'admin' ||
+      (viewerRole === 'kitchen' && kitchenAllowed.includes(nextRaw)) ||
+      (viewerRole === 'server'  && nextRaw === 'served'));
+
+  const next = canActOnNext ? nextRaw : null;
 
   const nextLabel = {
     preparing: 'Start Preparing',
@@ -110,6 +123,10 @@ export default function OrderCard({ order, onStatus }) {
             {nextLabel}
             <IconArrowRight size={14} />
           </button>
+        ) : nextRaw && order.status === 'ready' && viewerRole === 'kitchen' ? (
+          <span className="text-xs italic opacity-60">
+            Awaiting server
+          </span>
         ) : (
           <span className="text-xs italic opacity-50">
             {order.status === 'served' ? 'Completed' : order.status === 'cancelled' ? 'Cancelled' : '-'}

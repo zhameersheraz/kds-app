@@ -1,4 +1,5 @@
 // ServerStatus - server's phone view of their active orders.
+// v6.3: server can cancel their own pending orders, mark ready ones as served.
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,6 +11,7 @@ import { elapsedLabel } from '../lib/format';
 import { printCustomerReceipt } from '../lib/printTicket';
 import TopBar from '../components/TopBar';
 import StatusBadge from '../components/StatusBadge';
+import Modal from '../components/Modal';
 import { IconPrinter } from '../components/icons';
 
 function formatMoney(n, cur) {
@@ -45,6 +47,14 @@ export default function ServerStatus() {
     }
   });
 
+  async function setStatus(order, next) {
+    try {
+      await api.setStatus(order.id, next);
+    } catch (e) {
+      toast.error('Could not update', e.message);
+    }
+  }
+
   const active = orders.filter((o) => o.status !== 'served' && o.status !== 'cancelled');
   const past   = orders.filter((o) => o.status === 'served');
 
@@ -64,7 +74,7 @@ export default function ServerStatus() {
           </div>
         ) : null}
 
-        {active.map((o) => <MyOrderRow key={o.id} order={o} cur={cur} />)}
+        {active.map((o) => <MyOrderRow key={o.id} order={o} cur={cur} onAction={setStatus} />)}
 
         {past.length > 0 ? (
           <details className="card p-3 text-sm">
@@ -94,8 +104,16 @@ export default function ServerStatus() {
   );
 }
 
-function MyOrderRow({ order, cur }) {
+function MyOrderRow({ order, cur, onAction }) {
   const isReady = order.status === 'ready';
+  const isPending = order.status === 'pending';
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  function cancel() {
+    setConfirmCancel(false);
+    onAction(order, 'cancelled');
+  }
+
   return (
     <div className={'card p-3 ' + (isReady ? 'border-accent' : '')}>
       <div className="flex items-center gap-2">
@@ -122,10 +140,44 @@ function MyOrderRow({ order, cur }) {
         </div>
       ) : null}
       {isReady ? (
-        <div className="mt-2 px-3 py-1.5 bg-accent text-white text-sm font-semibold text-center">
-          Order ready - run it to the table.
+        <div className="mt-2 flex gap-2">
+          <div className="flex-1 px-3 py-1.5 bg-accent text-white text-sm font-semibold text-center">
+            Order ready - run it to the table.
+          </div>
+          <button
+            className="btn bg-ink text-paper border border-ink hover:bg-ink-soft text-sm"
+            onClick={() => onAction(order, 'served')}
+            title="Mark Served"
+          >
+            Served
+          </button>
         </div>
       ) : null}
+      {isPending ? (
+        <div className="mt-2 flex justify-end">
+          <button
+            className="btn-ghost text-xs text-accent"
+            onClick={() => setConfirmCancel(true)}
+            title="Cancel this pending order"
+          >
+            Cancel order
+          </button>
+        </div>
+      ) : null}
+
+      <Modal
+        open={confirmCancel}
+        onClose={() => setConfirmCancel(false)}
+        title="Cancel order?"
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setConfirmCancel(false)}>Keep it</button>
+            <button className="btn-danger" onClick={cancel}>Yes, cancel</button>
+          </>
+        }
+      >
+        Order for table <strong>#{order.table_number}</strong> ({order.items.length} item{order.items.length === 1 ? '' : 's'}) will be cancelled. It will not be sent to the kitchen if it has not been already.
+      </Modal>
     </div>
   );
 }

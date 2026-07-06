@@ -2,12 +2,20 @@
 //
 // State machine:
 //   pending -> preparing -> ready -> served
-//   any     -> cancelled (admin only)
+//   pending -> cancelled  (admin, or the server who created the order)
+//   preparing -> cancelled (admin only)
+//   any other terminal = no transitions out
 //
-// Roles:
-//   server  : create orders, mark `ready` orders as `served`
-//   kitchen : pending -> preparing -> ready
+// Roles (v6.3):
+//   server  : create orders, cancel own PENDING orders,
+//             mark any `ready` order as `served`
+//   kitchen : pending -> preparing, preparing -> ready
 //   admin   : any transition, any view
+//
+// Stale handling:
+//   pending orders older than STALE_MINUTES are auto-cancelled (lazy,
+//   runs whenever /orders/active or /orders/mine is hit). Keeps the
+//   kitchen from drowning in abandoned tickets without admin babysitting.
 
 const express = require('express');
 const { nanoid } = require('nanoid');
@@ -15,6 +23,29 @@ const db = require('../db');
 const { verify, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+
+const STALE_MINUTES = parseInt(process.env.STALE_PENDING_MINUTES || '30', 10);
+
+function autoCancelStale() {
+  // Anything still 'pending' for over STALE_MINUTES gets cancelled.
+  // Runs inside a transaction, touches only orders (no items).
+  const tx = db.transaction(() => {
+    const due = db.prepare(
+      `SELECT id FROM orders
+       WHERE status = 'pending'
+         AND created_at < datetime('now', ?)`
+    ).all(`-${STALE_MINUTES} minutes`);
+    if (due.length === 0) return 0;
+    const stmt = db.prepare(
+      `UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?`
+    );
+    for (const r of due) stmt.run(r.id);
+    return due.length;
+  });
+  const n = tx();
+  if (n) console.log(`[orders] auto-cancelled ${n} stale pending order(s) (>${STALE_MINUTES} min)`);
+  return n;
+}
 
 const VALID_TRANSITIONS = {
   pending:    ['preparing', 'cancelled'],
@@ -99,6 +130,7 @@ router.post('/', verify, requireRole('server', 'admin'), (req, res) => {
 
 // GET /orders/active — KDS feed (kitchen + admin)
 router.get('/active', verify, requireRole('kitchen', 'admin'), (req, res) => {
+  autoCancelStale();
   const rows = db
     .prepare(
       `SELECT * FROM orders WHERE status IN ('pending','preparing','ready')
@@ -110,6 +142,7 @@ router.get('/active', verify, requireRole('kitchen', 'admin'), (req, res) => {
 
 // GET /orders/mine — server's own orders, today (server + admin)
 router.get('/mine', verify, requireRole('server', 'admin'), (req, res) => {
+  autoCancelStale();
   const rows = db
     .prepare(
       `SELECT * FROM orders
@@ -148,12 +181,18 @@ router.patch('/:id/status', verify, (req, res) => {
   const role = req.user.role;
   const isOwnServer = order.server_id === req.user.sub;
 
-  if (next === 'cancelled' && role !== 'admin') {
-    return res.status(403).json({ error: 'forbidden' });
+  // Cancel: admin always, or the original server (only while it's still pending)
+  if (next === 'cancelled') {
+    const canCancel =
+      role === 'admin' ||
+      (role === 'server' && isOwnServer && order.status === 'pending');
+    if (!canCancel) return res.status(403).json({ error: 'forbidden' });
   }
+  // Kitchen steps: kitchen or admin
   if (['preparing', 'ready'].includes(next) && role !== 'kitchen' && role !== 'admin') {
     return res.status(403).json({ error: 'forbidden' });
   }
+  // Mark served: any server, or admin, or the server who created it
   if (next === 'served' && !(role === 'server' || role === 'admin') && !isOwnServer) {
     return res.status(403).json({ error: 'forbidden' });
   }
