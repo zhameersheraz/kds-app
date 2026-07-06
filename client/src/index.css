@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply font-sans antialiased bg-paper text-ink;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+  h1, h2, h3 { @apply font-display; letter-spacing: -0.01em; }
+  a { color: #b91c1c; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-medium
+           rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+           focus-visible:ring-offset-paper active:translate-y-px;
+  }
+  .btn-primary   { @apply btn bg-ink text-paper hover:bg-ink/85; }
+  .btn-accent    { @apply btn bg-accent text-white hover:bg-accent/85; }
+  .btn-ghost     { @apply btn bg-transparent border border-line hover:bg-ink/5; }
+  .btn-quiet     { @apply btn bg-transparent hover:bg-ink/5; }
+  .btn-danger    { @apply btn bg-transparent border border-accent text-accent hover:bg-accent hover:text-white; }
+
+  .card {
+    @apply bg-paper rounded border border-line;
+  }
+
+  .input {
+    @apply w-full px-2 py-2 text-base bg-paper text-ink border-0 border-b border-line
+           focus:outline-none focus:border-ink transition-colors;
+    border-radius: 0;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded-sm;
+  }
+  .chip-ink    { @apply chip bg-ink text-paper; }
+  .chip-accent { @apply chip bg-accent text-white; }
+  .chip-ghost  { @apply chip bg-transparent border border-line text-ink/80; }
+
+  .rule       { @apply h-px bg-line; }
+  .rule-thick { @apply h-px bg-ink; }
+
+  .mono       { @apply font-mono tabular-nums; }
+}
+
+@keyframes slideup {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.animate-slideup { animation: slideup 0.3s ease-out; }
+
+.paper-grain {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.012) 1px, transparent 0);
+  background-size: 4px 4px;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.animate-fadein { animation: fadein 0.15s ease-out; }
