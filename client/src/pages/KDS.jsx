@@ -117,12 +117,6 @@ export default function KDS() {
             }
           </Rail>
         </div>
-
-        {orders.length === 0 ? (
-          <div className="card p-10 mt-4 text-center opacity-50">
-            No active orders. The next ticket will appear here automatically.
-          </div>
-        ) : null}
       </main>
     </div>
   );
