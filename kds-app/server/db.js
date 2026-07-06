@@ -154,7 +154,7 @@ function seedIfEmpty() {
       { id: 'm13', name: 'Iced Coffee',         category: 'Drinks',  price: 95,  description: 'Cold brew over ice',                                            image: 'https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=600&h=600&fit=crop&auto=format' },
       // Desserts
       { id: 'm14', name: 'Chocolate Brownie',   category: 'Desserts',price: 140, description: 'Warm, fudge sauce, vanilla ice cream',                          image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format' },
-      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1567306301406-9f9cf134a9f5?w=600&h=600&fit=crop&auto=format' }
+      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1578775887804-699de7086eae?w=600&h=600&fit=crop&auto=format' }
     ];
     const tx = db.transaction((rows) => {
       for (const m of rows) insertItem.run(m.id, m.name, m.category, m.price, m.description, m.image);
@@ -179,7 +179,7 @@ function seedIfEmpty() {
       'm12': 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=600&fit=crop&auto=format',
       'm13': 'https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=600&h=600&fit=crop&auto=format',
       'm14': 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format',
-      'm15': 'https://images.unsplash.com/photo-1567306301406-9f9cf134a9f5?w=600&h=600&fit=crop&auto=format'
+      'm15': 'https://images.unsplash.com/photo-1578775887804-699de7086eae?w=600&h=600&fit=crop&auto=format'
     };
     const updateImg = db.prepare('UPDATE menu_items SET image = ? WHERE id = ?');
     let updated = 0;

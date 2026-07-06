@@ -1,14 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        ink:    '#0a0a0a',
-        paper:  '#fafaf7',
-        accent: '#b91c1c',
-        line:   '#e5e1d8',
-        muted:  '#525252'
+        // Theme-aware via CSS variables (defined in index.css).
+        // Using rgb() so Tailwind opacity modifiers work (bg-ink/40 etc.)
+        ink:    'rgb(var(--c-ink)    / <alpha-value>)',
+        paper:  'rgb(var(--c-paper)  / <alpha-value>)',
+        accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        line:   'rgb(var(--c-line)   / <alpha-value>)',
+        muted:  'rgb(var(--c-muted)  / <alpha-value>)'
       },
       fontFamily: {
         display: ['Georgia', '"Times New Roman"', 'ui-serif', 'serif'],
@@ -27,8 +30,8 @@ export default {
           '100%': { opacity: '1', transform: 'translateY(0)' }
         },
         'pulse-ring': {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(185, 28, 28, 0)' },
-          '50%':      { boxShadow: '0 0 0 6px rgba(185, 28, 28, 0.35)' }
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(220, 38, 38, 0)' },
+          '50%':      { boxShadow: '0 0 0 6px rgba(220, 38, 38, 0.35)' }
         }
       },
       animation: {

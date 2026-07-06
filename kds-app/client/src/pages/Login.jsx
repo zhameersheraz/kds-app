@@ -1,7 +1,8 @@
-// Login page - serif wordmark, single column, monochrome, no emoji.
+// Login page - clean monochrome. Signup is intentionally hidden; admins can
+// create accounts at /signup directly.
 
 import React, { useState } from 'react';
-import { useNavigate, Navigate, Link } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/store';
 import { useTheme } from '../lib/theme';
 import { IconSun, IconMoon, IconSystem } from '../components/icons';
@@ -63,11 +64,11 @@ export default function Login() {
         </div>
 
         <h1 className="font-display text-4xl mb-2">Sign in</h1>
-        <p className="text-sm opacity-60 mb-8">Use your account to start taking or preparing orders.</p>
+        <p className="text-sm text-muted mb-8">Use your account to start taking or preparing orders.</p>
 
         <form onSubmit={submit} className="space-y-5">
           <label className="block">
-            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Username</span>
+            <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Username</span>
             <input
               className="input"
               value={username}
@@ -79,7 +80,7 @@ export default function Login() {
           </label>
 
           <label className="block">
-            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Password</span>
+            <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Password</span>
             <input
               type="password"
               className="input"
@@ -102,23 +103,18 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-sm opacity-70 mt-6 text-center">
-          New here? <Link to="/signup" className="underline underline-offset-2">Create an account</Link>
-        </p>
-
-        <div className="my-8 border-t" style={{ borderColor: 'var(--line)' }} />
-        <div className="text-[10px] uppercase tracking-widest opacity-50 mb-2">Demo accounts</div>
+        <div className="my-8 border-t border-line" />
+        <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts</div>
         <div className="grid grid-cols-3 gap-2">
           {DEMO.map((p) => (
             <button
               key={p.username}
               type="button"
               onClick={() => quick(p)}
-              className="border px-2 py-2 text-left hover:border-ink dark:hover:border-paper transition"
-              style={{ borderColor: 'var(--line)' }}
+              className="border border-line px-2 py-2 text-left hover:border-ink transition"
             >
               <div className="text-[11px] font-semibold uppercase tracking-wider">{p.role}</div>
-              <div className="text-[11px] opacity-60 mono">{p.username}</div>
+              <div className="text-[11px] text-muted mono">{p.username}</div>
             </button>
           ))}
         </div>

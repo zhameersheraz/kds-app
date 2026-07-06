@@ -124,61 +124,17 @@ For a true 2-device demo:
 
 ## Deploy publicly (anyone on the internet can reach it)
 
-Two paths below. Pick one.
+A full step-by-step guide for three free paths lives in **[DEPLOY.md](./DEPLOY.md)**:
+- **Cloudflare Tunnel** — 2 commands, no signup, instant public URL
+- **ngrok** — 5 min, free signup, stable free URL
+- **Render.com** — 15 min, permanent hosted URL (~$0.25/mo for the SQLite disk)
 
-### Option 1 - Cloudflare Tunnel (free, no signup, instant URL)
-
-This is the fastest way to get a public `https://*.trycloudflare.com` URL
-pointing at the server running on your Kali VM. Your VM stays the source of
-truth, so the SQLite database keeps working.
-
-On Kali (with the server already running on port 4000):
-
+Or use the one-shot script:
 ```bash
-# Install cloudflared
-sudo apt update && sudo apt install -y cloudflared
-
-# Open a public tunnel to the running server
-cloudflared tunnel --url http://localhost:4000
+chmod +x deploy-tunnel.sh
+./deploy-tunnel.sh
 ```
-
-Cloudflare prints a URL like `https://random-words-here.trycloudflare.com`.
-Share that with anyone - they hit the same KDS app, real-time sync works across
-the internet. Caveat: the URL is random and changes every restart. For a fixed
-URL, sign up for Cloudflare and create a named tunnel (free).
-
-For a quick start that always gives you a stable URL you control, use ngrok:
-
-```bash
-# Sign up at https://dashboard.ngrok.com and grab your authtoken
-ngrok config add-authtoken <your-token>
-ngrok http 4000
-# Forwarding https://abc-123.ngrok-free.app -> http://localhost:4000
-```
-
-### Option 2 - Render.com (free web service + persistent disk)
-
-This pushes the app to a hosted environment, so your VM can be off. The free
-tier spins down after 15 min of inactivity but comes back on the next request.
-
-1. Push the project to a private GitHub repo.
-2. Sign up at <https://render.com>.
-3. New -> Web Service -> connect your repo.
-4. Settings:
-   - Environment: `Node`
-   - Build command: `npm install && cd ../client && npm install && npm run build`
-   - Start command: `node index.js`
-   - Add a disk: mount path `/opt/render/project/src/server/data`, size 1 GB.
-5. Add env vars: `JWT_SECRET=<long-random-string>`, `PORT=4000`.
-6. Deploy. Render gives you `https://<your-app>.onrender.com`.
-
-The persistent disk keeps the SQLite DB across restarts. Free tier caveat:
-spins down after 15 min inactivity, first request after that takes a few seconds.
-
-### Option 3 - Fly.io (free tier with persistent volume)
-
-`fly launch` walks you through it. Smaller free tier than Render but no spin-down.
-Requires a credit card on file even for free tier (won't be charged for free usage).
+Starts the server and opens a public Cloudflare tunnel. Ctrl+C cleans up.
 
 ## Currency
 

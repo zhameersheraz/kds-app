@@ -3,13 +3,35 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme: warm off-white paper, ink black text, deep red accent. */
+  :root {
+    color-scheme: light;
+    --c-ink:    0 0 0;           /* pure black */
+    --c-paper:  255 255 255;     /* pure white */
+    --c-accent: 185 28 28;       /* deep red */
+    --c-line:   212 212 212;     /* visible hairline */
+    --c-muted:  38 38 38;        /* dark gray text */
+  }
+
+  /* Dark theme: warm dark gray, off-white text, brighter red. */
+  .dark {
+    color-scheme: dark;
+    --c-ink:    245 245 244;     /* off-white */
+    --c-paper:  24 24 27;        /* warm dark gray, not pure black */
+    --c-accent: 248 113 113;     /* brighter red */
+    --c-line:   63 63 70;        /* visible dark border */
+    --c-muted:  212 212 216;     /* readable muted */
+  }
+
   html, body, #root { height: 100%; }
   body {
-    @apply font-sans antialiased bg-paper text-ink;
+    @apply font-sans antialiased;
+    background: rgb(var(--c-paper));
+    color: rgb(var(--c-ink));
     font-feature-settings: 'tnum' on, 'lnum' on;
   }
   h1, h2, h3 { @apply font-display; letter-spacing: -0.01em; }
-  a { color: #b91c1c; }
+  a { color: rgb(var(--c-accent)); }
 }
 
 @layer components {
@@ -21,18 +43,24 @@
   }
   .btn-primary   { @apply btn bg-ink text-paper hover:bg-ink/85; }
   .btn-accent    { @apply btn bg-accent text-white hover:bg-accent/85; }
-  .btn-ghost     { @apply btn bg-transparent border border-line hover:bg-ink/5; }
-  .btn-quiet     { @apply btn bg-transparent hover:bg-ink/5; }
+  .btn-ghost     { @apply btn bg-transparent border border-line hover:bg-ink/5 dark:hover:bg-paper/10; }
+  .btn-quiet     { @apply btn bg-transparent hover:bg-ink/5 dark:hover:bg-paper/10; }
   .btn-danger    { @apply btn bg-transparent border border-accent text-accent hover:bg-accent hover:text-white; }
 
   .card {
-    @apply bg-paper rounded border border-line;
+    @apply rounded border;
+    background: rgb(var(--c-paper));
+    border-color: rgb(var(--c-line));
   }
 
   .input {
-    @apply w-full px-2 py-2 text-base bg-paper text-ink border-0 border-b border-line
-           focus:outline-none focus:border-ink transition-colors;
-    border-radius: 0;
+    @apply w-full px-2 py-2 text-base border-0 border-b focus:outline-none transition-colors;
+    background: rgb(var(--c-paper));
+    color: rgb(var(--c-ink));
+    border-color: rgb(var(--c-line));
+  }
+  .input:focus {
+    border-color: rgb(var(--c-ink));
   }
 
   .chip {
@@ -42,7 +70,7 @@
   .chip-accent { @apply chip bg-accent text-white; }
   .chip-ghost  { @apply chip bg-transparent border border-line text-ink/80; }
 
-  .rule       { @apply h-px bg-line; }
+  .rule       { @apply h-px; background: rgb(var(--c-line)); }
   .rule-thick { @apply h-px bg-ink; }
 
   .mono       { @apply font-mono tabular-nums; }

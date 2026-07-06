@@ -1,15 +1,17 @@
-// TopBar - app shell header. Shows live clock + currency switcher.
+// TopBar - app shell header. Live clock + currency switch + theme toggle.
 // Logout uses a confirmation modal.
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/store';
+import { useTheme } from '../lib/theme';
 import { useCurrency } from '../lib/currency';
-import { IconClock, IconLogout } from './icons';
+import { IconSun, IconMoon, IconSystem, IconClock, IconLogout } from './icons';
 import Modal from './Modal';
 
 export default function TopBar({ title, subtitle, back, right }) {
   const { user, logout } = useAuth();
+  const { mode, cycle } = useTheme();
   const { code, toggle } = useCurrency();
   const nav = useNavigate();
 
@@ -27,11 +29,11 @@ export default function TopBar({ title, subtitle, back, right }) {
     nav('/login');
   }
 
+  const ThemeIcon = mode === 'light' ? IconSun : mode === 'dark' ? IconMoon : IconSystem;
+
   return (
     <>
-      <header
-        className="sticky top-0 z-30 border-b bg-paper border-line"
-      >
+      <header className="sticky top-0 z-30 border-b bg-paper border-line">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2 sm:gap-3 flex-wrap">
           {back ? (
             <Link to={back} className="btn-quiet px-2 py-1.5" aria-label="Back">
@@ -60,6 +62,10 @@ export default function TopBar({ title, subtitle, back, right }) {
 
             <button onClick={toggle} className="btn-quiet px-2 py-1.5 text-xs mono" title="Switch currency">
               {code}
+            </button>
+
+            <button onClick={cycle} className="btn-quiet px-2 py-1.5" title={'Theme: ' + mode}>
+              <ThemeIcon size={16} />
             </button>
 
             {user ? (
