@@ -81,10 +81,10 @@ function Tab({ active, onClick, icon, children }) {
 function Overview({ sales, cur }) {
   const { totals, byStatus, week, topItems } = sales;
   const cards = [
-    { label: "Today's orders",  value: totals.orders },
-    { label: "Today's revenue", value: formatMoney(totals.revenue, cur) },
-    { label: 'Pending now',     value: byStatus.find((b) => b.status === 'pending')?.count   || 0 },
-    { label: 'Preparing now',   value: byStatus.find((b) => b.status === 'preparing')?.count || 0 }
+    { label: "Today's orders",  value: totals.orders,                       size: 'sm' },
+    { label: "Today's revenue", value: formatMoney(totals.revenue, cur),    size: 'lg' },
+    { label: 'Pending now',     value: byStatus.find((b) => b.status === 'pending')?.count   || 0, size: 'sm' },
+    { label: 'Preparing now',   value: byStatus.find((b) => b.status === 'preparing')?.count || 0, size: 'sm' }
   ];
   return (
     <>
@@ -92,9 +92,12 @@ function Overview({ sales, cur }) {
         <h2 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Today at a glance</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {cards.map((c) => (
-            <div key={c.label} className="card p-4">
-              <div className="text-[10px] uppercase tracking-widest opacity-60">{c.label}</div>
-              <div className="font-display text-3xl font-bold mt-1 mono tabular-nums">{c.value}</div>
+            <div key={c.label} className="card p-3 sm:p-4 min-w-0">
+              <div className="text-[10px] uppercase tracking-widest opacity-60 truncate">{c.label}</div>
+              <div className={
+                'font-display font-bold mt-1 mono tabular-nums truncate ' +
+                (c.size === 'lg' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl')
+              }>{c.value}</div>
             </div>
           ))}
         </div>

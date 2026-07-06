@@ -98,9 +98,9 @@ function seedIfEmpty() {
       'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
     );
     const seedUsers = [
-      { id: 'u_admin', name: 'zham',     username: 'zham',     password: 'zham123', role: 'admin'   },
-      { id: 'u_server',name: 'Sam',      username: 'server',   password: 'server123', role: 'server' },
-      { id: 'u_kitch', name: 'Kim',      username: 'kitchen',  password: 'kitchen123', role: 'kitchen' }
+      { id: 'u_admin',  name: 'zham',    username: 'zham',    password: 'ZhamAdmin!2026-KDS',   role: 'admin'   },
+      { id: 'u_server', name: 'Sam',     username: 'server',  password: 'ServerPass!2026-KDS',  role: 'server'  },
+      { id: 'u_kitch',  name: 'Kim',     username: 'kitchen', password: 'KitchenPass!2026-KDS', role: 'kitchen' }
     ];
     const tx = db.transaction((rows) => {
       for (const u of rows) {
@@ -108,26 +108,33 @@ function seedIfEmpty() {
       }
     });
     tx(seedUsers);
-    console.log('[db] seeded users: zham/zham123 (admin), server/server123, kitchen/kitchen123');
+    console.log('[db] seeded users: zham/ZhamAdmin!2026-KDS (admin), server/ServerPass!2026-KDS, kitchen/KitchenPass!2026-KDS');
   } else {
-    // Self-healing migration: ensure the canonical admin exists with the
-    // current default password. Old DBs that have 'admin/admin123' get fixed.
-    const admin = db.prepare('SELECT * FROM users WHERE role = ? LIMIT 1').get('admin');
-    if (admin) {
-      const wantsZham = admin.username !== 'zham';
-      const wantsPwd  = !bcrypt.compareSync('zham123', admin.password_hash);
-      if (wantsZham || wantsPwd) {
-        db.prepare(
-          'UPDATE users SET username = ?, name = ?, password_hash = ? WHERE id = ?'
-        ).run('zham', 'zham', bcrypt.hashSync('zham123', 10), admin.id);
-        console.log('[db] admin account updated to zham/zham123');
+    // Self-healing migration: ensure canonical demo accounts exist with
+    // current default passwords. zham123 / server123 / kitchen123 triggered
+    // Chrome breach warnings, so v6 uses stronger passwords.
+    const CANONICAL = [
+      { id: 'u_admin',  name: 'zham',    username: 'zham',    password: 'ZhamAdmin!2026-KDS',   role: 'admin'   },
+      { id: 'u_server', name: 'Sam',     username: 'server',  password: 'ServerPass!2026-KDS',  role: 'server'  },
+      { id: 'u_kitch',  name: 'Kim',     username: 'kitchen', password: 'KitchenPass!2026-KDS', role: 'kitchen' }
+    ];
+    const findByRole = db.prepare('SELECT * FROM users WHERE role = ? LIMIT 1');
+    const updatePwd  = db.prepare('UPDATE users SET username = ?, name = ?, password_hash = ? WHERE id = ?');
+    const insertUser = db.prepare('INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)');
+
+    for (const u of CANONICAL) {
+      const existing = findByRole.get(u.role);
+      if (existing) {
+        const wantsUser = existing.username !== u.username;
+        const wantsPwd  = !bcrypt.compareSync(u.password, existing.password_hash);
+        if (wantsUser || wantsPwd) {
+          updatePwd.run(u.username, u.name, bcrypt.hashSync(u.password, 10), existing.id);
+          console.log(`[db] ${u.role} account refreshed: ${u.username}/${u.password}`);
+        }
+      } else {
+        insertUser.run(u.id, u.name, u.username, bcrypt.hashSync(u.password, 10), u.role);
+        console.log(`[db] ${u.role} account created: ${u.username}/${u.password}`);
       }
-    } else {
-      // No admin at all, create one.
-      db.prepare(
-        'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
-      ).run('u_admin', 'zham', 'zham', bcrypt.hashSync('zham123', 10), 'admin');
-      console.log('[db] admin account created: zham/zham123');
     }
   }
 
@@ -151,10 +158,10 @@ function seedIfEmpty() {
       { id: 'm10', name: 'Cola',                category: 'Drinks',  price: 65,  description: 'Ice-cold can',                                                  image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=600&fit=crop&auto=format' },
       { id: 'm11', name: 'Iced Tea',            category: 'Drinks',  price: 75,  description: 'House-brewed, sweet or unsweetened',                            image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=600&fit=crop&auto=format' },
       { id: 'm12', name: 'Lemonade',            category: 'Drinks',  price: 85,  description: 'Fresh-squeezed, with mint',                                     image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=600&fit=crop&auto=format' },
-      { id: 'm13', name: 'Iced Coffee',         category: 'Drinks',  price: 95,  description: 'Cold brew over ice',                                            image: 'https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=600&h=600&fit=crop&auto=format' },
+      { id: 'm13', name: 'Iced Coffee',         category: 'Drinks',  price: 95,  description: 'Cold brew over ice',                                            image: 'https://images.unsplash.com/photo-1559526324-4af87eac9ae1?w=600&h=600&fit=crop&auto=format' },
       // Desserts
       { id: 'm14', name: 'Chocolate Brownie',   category: 'Desserts',price: 140, description: 'Warm, fudge sauce, vanilla ice cream',                          image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format' },
-      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1578775887804-699de7086eae?w=600&h=600&fit=crop&auto=format' }
+      { id: 'm15', name: 'Cheesecake Slice',    category: 'Desserts',price: 160, description: 'New-York style, berry compote',                                 image: 'https://images.unsplash.com/photo-1533134242443-4ac7a6b250e1?w=600&h=600&fit=crop&auto=format' }
     ];
     const tx = db.transaction((rows) => {
       for (const m of rows) insertItem.run(m.id, m.name, m.category, m.price, m.description, m.image);
@@ -177,9 +184,9 @@ function seedIfEmpty() {
       'm10': 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=600&fit=crop&auto=format',
       'm11': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=600&fit=crop&auto=format',
       'm12': 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=600&fit=crop&auto=format',
-      'm13': 'https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=600&h=600&fit=crop&auto=format',
+      'm13': 'https://images.unsplash.com/photo-1559526324-4af87eac9ae1?w=600&h=600&fit=crop&auto=format',
       'm14': 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format',
-      'm15': 'https://images.unsplash.com/photo-1578775887804-699de7086eae?w=600&h=600&fit=crop&auto=format'
+      'm15': 'https://images.unsplash.com/photo-1533134242443-4ac7a6b250e1?w=600&h=600&fit=crop&auto=format'
     };
     const updateImg = db.prepare('UPDATE menu_items SET image = ? WHERE id = ?');
     let updated = 0;

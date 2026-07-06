@@ -28,7 +28,7 @@ router.post('/login', (req, res) => {
 router.post('/signup', (req, res) => {
   const { name, username, password, role } = req.body || {};
   if (!name || !username || !password) return res.status(400).json({ error: 'missing_fields' });
-  if (password.length < 6) return res.status(400).json({ error: 'weak_password' });
+  if (password.length < 8) return res.status(400).json({ error: 'weak_password' });
 
   const allowedRoles = ['server', 'kitchen', 'admin'];
   const finalRole = allowedRoles.includes(role) ? role : 'server';

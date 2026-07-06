@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/store';
+import { IconEye, IconEyeOff } from '../components/icons';
 
 const ROLES = [
   { value: 'server',  label: 'Server',  desc: 'Takes orders at the counter' },
@@ -18,6 +19,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [role, setRole] = useState('server');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -31,7 +33,7 @@ export default function Signup() {
   async function submit(e) {
     e.preventDefault();
     setErr(null);
-    if (password.length < 6) { setErr('Password must be at least 6 characters'); return; }
+    if (password.length < 8) { setErr('Password must be at least 8 characters'); return; }
     setBusy(true);
     try {
       await signup(name, username.trim(), password, role);
@@ -40,7 +42,7 @@ export default function Signup() {
       const code = e?.data?.error;
       setErr(
         code === 'username_taken' ? 'That username is already in use' :
-        code === 'weak_password'   ? 'Password must be at least 6 characters' :
+        code === 'weak_password'   ? 'Password must be at least 8 characters' :
         'Could not create account'
       );
     } finally {
@@ -113,16 +115,27 @@ export default function Signup() {
 
             <label className="block">
               <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Password</span>
-              <input
-                type="password"
-                className="input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                autoCapitalize="off"
-                autoCorrect="off"
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  className="input pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-ink"
+                  title={showPw ? 'Hide password' : 'Show password'}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                >
+                  {showPw ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                </button>
+              </div>
             </label>
 
             <div>

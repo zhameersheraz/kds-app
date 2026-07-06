@@ -1,25 +1,25 @@
 // Login page - clean monochrome. Signup is intentionally hidden; admins can
 // create accounts at /signup directly.
+// v6: removed theme toggle, added show/hide password button.
 
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/store';
-import { useTheme } from '../lib/theme';
-import { IconSun, IconMoon, IconSystem } from '../components/icons';
+import { IconEye, IconEyeOff } from '../components/icons';
 
 const DEMO = [
-  { role: 'Server',  username: 'server',  password: 'server123' },
-  { role: 'Kitchen', username: 'kitchen', password: 'kitchen123' },
-  { role: 'Admin',   username: 'zham',    password: 'zham123'   }
+  { role: 'Server',  username: 'server',  password: 'ServerPass!2026-KDS' },
+  { role: 'Kitchen', username: 'kitchen', password: 'KitchenPass!2026-KDS' },
+  { role: 'Admin',   username: 'zham',    password: 'ZhamAdmin!2026-KDS'  }
 ];
 
 export default function Login() {
   const { user, login } = useAuth();
-  const { mode, cycle } = useTheme();
   const nav = useNavigate();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -48,8 +48,6 @@ export default function Login() {
     setPassword(p.password);
   }
 
-  const ThemeIcon = mode === 'light' ? IconSun : mode === 'dark' ? IconMoon : IconSystem;
-
   return (
     <div className="min-h-screen grid place-items-center px-4 py-10 paper-grain">
       <div className="w-full max-w-sm">
@@ -58,9 +56,6 @@ export default function Login() {
             <span className="inline-block border-l-2 border-accent pl-2">KDS</span>
             <span className="ml-2 opacity-50 text-base">/ Kitchen Display</span>
           </div>
-          <button onClick={cycle} className="btn-quiet p-1.5" title={'Theme: ' + mode}>
-            <ThemeIcon size={18} />
-          </button>
         </div>
 
         <h1 className="font-display text-4xl mb-2">Sign in</h1>
@@ -81,15 +76,26 @@ export default function Login() {
 
           <label className="block">
             <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Password</span>
-            <input
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              autoCapitalize="off"
-              autoCorrect="off"
-            />
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                className="input pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+                autoCapitalize="off"
+                autoCorrect="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-ink"
+                title={showPw ? 'Hide password' : 'Show password'}
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+              >
+                {showPw ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+              </button>
+            </div>
           </label>
 
           {err ? <div className="text-sm text-accent">{err}</div> : null}
@@ -104,7 +110,7 @@ export default function Login() {
         </form>
 
         <div className="my-8 border-t border-line" />
-        <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts</div>
+        <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts (click to fill)</div>
         <div className="grid grid-cols-3 gap-2">
           {DEMO.map((p) => (
             <button

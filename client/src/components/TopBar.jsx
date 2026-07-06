@@ -1,17 +1,16 @@
-// TopBar - app shell header. Live clock + currency switch + theme toggle.
+// TopBar - app shell header. Live clock + currency switch.
+// Theme toggle removed in v6 (dark mode is gone).
 // Logout uses a confirmation modal.
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/store';
-import { useTheme } from '../lib/theme';
 import { useCurrency } from '../lib/currency';
-import { IconSun, IconMoon, IconSystem, IconClock, IconLogout } from './icons';
+import { IconClock, IconLogout, IconEye, IconEyeOff } from './icons';
 import Modal from './Modal';
 
 export default function TopBar({ title, subtitle, back, right }) {
   const { user, logout } = useAuth();
-  const { mode, cycle } = useTheme();
   const { code, toggle } = useCurrency();
   const nav = useNavigate();
 
@@ -28,8 +27,6 @@ export default function TopBar({ title, subtitle, back, right }) {
     setConfirmLogout(false);
     nav('/login');
   }
-
-  const ThemeIcon = mode === 'light' ? IconSun : mode === 'dark' ? IconMoon : IconSystem;
 
   return (
     <>
@@ -62,10 +59,6 @@ export default function TopBar({ title, subtitle, back, right }) {
 
             <button onClick={toggle} className="btn-quiet px-2 py-1.5 text-xs mono" title="Switch currency">
               {code}
-            </button>
-
-            <button onClick={cycle} className="btn-quiet px-2 py-1.5" title={'Theme: ' + mode}>
-              <ThemeIcon size={16} />
             </button>
 
             {user ? (
