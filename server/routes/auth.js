@@ -23,30 +23,59 @@ router.post('/login', (req, res) => {
   res.json({ token, user });
 });
 
-// Open signup. Anyone can create an account; they pick the role.
-// The first account is auto-promoted to admin (handled below).
+// Public signup.
+//
+// The first account on a fresh database becomes admin so a new deployment is
+// usable without a console. Every later signup is a staff account and can only
+// pick server or kitchen.
+//
+// This used to honour the role field straight from the request body, so anyone
+// who could reach /api/auth/signup could post role:"admin" and get an admin
+// token. On the public demo that was one POST away from owning the app.
+const PUBLIC_ROLES = ['server', 'kitchen'];
+
 router.post('/signup', (req, res) => {
   const { name, username, password, role } = req.body || {};
-  if (!name || !username || !password) return res.status(400).json({ error: 'missing_fields' });
+
+  if (typeof name !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'missing_fields' });
+  }
+
+  const cleanName = name.trim();
+  const cleanUser = username.trim().toLowerCase();
+
+  if (!cleanName || !cleanUser || !password) return res.status(400).json({ error: 'missing_fields' });
+  if (cleanUser.length > 64) return res.status(400).json({ error: 'username_too_long' });
+  if (!/^[a-z0-9._-]+$/.test(cleanUser)) {
+    return res.status(400).json({ error: 'bad_username', hint: 'letters, numbers, dot, dash, underscore' });
+  }
   if (password.length < 8) return res.status(400).json({ error: 'weak_password' });
 
-  const allowedRoles = ['server', 'kitchen', 'admin'];
-  const finalRole = allowedRoles.includes(role) ? role : 'server';
+  const requested = PUBLIC_ROLES.includes(role) ? role : 'server';
+  const isFirstUser = db.prepare('SELECT COUNT(*) AS c FROM users').get().c === 0;
+  const roleToUse = isFirstUser ? 'admin' : requested;
 
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  // Check uniqueness on the NORMALISED username. This used to compare the raw
+  // field, so "  Zham " passed the check and then blew up on the UNIQUE index
+  // as an unhandled 500.
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(cleanUser);
   if (existing) return res.status(409).json({ error: 'username_taken' });
-
-  // First user becomes admin automatically so a fresh deployment is usable.
-  const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
-  const roleToUse = userCount === 0 ? 'admin' : finalRole;
 
   const id = 'u_' + nanoid(10);
   const hash = bcrypt.hashSync(password, 10);
-  db.prepare(
-    'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
-  ).run(id, name.trim(), username.trim().toLowerCase(), hash, roleToUse);
+  try {
+    db.prepare(
+      'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
+    ).run(id, cleanName, cleanUser, hash, roleToUse);
+  } catch (e) {
+    // Lost a signup race against a concurrent request for the same username.
+    if (String(e.message).includes('UNIQUE')) {
+      return res.status(409).json({ error: 'username_taken' });
+    }
+    throw e;
+  }
 
-  const user = { id, name: name.trim(), username: username.trim().toLowerCase(), role: roleToUse };
+  const user = { id, name: cleanName, username: cleanUser, role: roleToUse };
   const token = sign(user);
   res.status(201).json({ token, user });
 });

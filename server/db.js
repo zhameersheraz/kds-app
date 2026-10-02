@@ -89,51 +89,58 @@ function migrate() {
 migrate();
 
 // --- Seed on first boot ---------------------------------------------------
+// The three demo accounts below are printed in the README, so they are public
+// knowledge to anyone who clones this repo. Set KDS_SEED_DEMO=false on a real
+// deployment to skip creating them entirely and make your own accounts through
+// a console or one-off script.
+const SEED_DEMO = process.env.KDS_SEED_DEMO !== 'false';
+
 function seedIfEmpty() {
   const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
   const menuCount = db.prepare('SELECT COUNT(*) AS c FROM menu_items').get().c;
 
   if (userCount === 0) {
-    const insertUser = db.prepare(
-      'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
-    );
-    const seedUsers = [
-      { id: 'u_admin',  name: 'zham',    username: 'zham',    password: 'ZhamAdmin!2026-KDS',   role: 'admin'   },
-      { id: 'u_server', name: 'Sam',     username: 'server',  password: 'ServerPass!2026-KDS',  role: 'server'  },
-      { id: 'u_kitch',  name: 'Kim',     username: 'kitchen', password: 'KitchenPass!2026-KDS', role: 'kitchen' }
-    ];
-    const tx = db.transaction((rows) => {
-      for (const u of rows) {
-        insertUser.run(u.id, u.name, u.username, bcrypt.hashSync(u.password, 10), u.role);
-      }
-    });
-    tx(seedUsers);
-    console.log('[db] seeded users: zham/ZhamAdmin!2026-KDS (admin), server/ServerPass!2026-KDS, kitchen/KitchenPass!2026-KDS');
-  } else {
-    // Self-healing migration: ensure canonical demo accounts exist with
-    // current default passwords. zham123 / server123 / kitchen123 triggered
-    // Chrome breach warnings, so v6 uses stronger passwords.
+    if (!SEED_DEMO) {
+      console.log('[db] demo seeding disabled (KDS_SEED_DEMO=false). No accounts created.');
+    } else {
+      const insertUser = db.prepare(
+        'INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)'
+      );
+      const seedUsers = [
+        { id: 'u_admin',  name: 'zham',    username: 'zham',    password: 'ZhamAdmin!2026-KDS',   role: 'admin'   },
+        { id: 'u_server', name: 'Sam',     username: 'server',  password: 'ServerPass!2026-KDS',  role: 'server'  },
+        { id: 'u_kitch',  name: 'Kim',     username: 'kitchen', password: 'KitchenPass!2026-KDS', role: 'kitchen' }
+      ];
+      const tx = db.transaction((rows) => {
+        for (const u of rows) {
+          insertUser.run(u.id, u.name, u.username, bcrypt.hashSync(u.password, 10), u.role);
+        }
+      });
+      tx(seedUsers);
+      console.log('[db] seeded demo accounts: zham (admin), server, kitchen. See README for the default passwords and change them.');
+    }
+  } else if (SEED_DEMO) {
+    // Create any canonical demo account that is missing, but never touch a
+    // password that already exists.
+    //
+    // The previous version compared the stored hash against the demo password
+    // on every boot and overwrote it on any mismatch. That meant changing the
+    // admin password was impossible: the next restart silently put the public
+    // demo password back.
     const CANONICAL = [
       { id: 'u_admin',  name: 'zham',    username: 'zham',    password: 'ZhamAdmin!2026-KDS',   role: 'admin'   },
       { id: 'u_server', name: 'Sam',     username: 'server',  password: 'ServerPass!2026-KDS',  role: 'server'  },
       { id: 'u_kitch',  name: 'Kim',     username: 'kitchen', password: 'KitchenPass!2026-KDS', role: 'kitchen' }
     ];
+    const findById = db.prepare('SELECT * FROM users WHERE id = ?');
     const findByRole = db.prepare('SELECT * FROM users WHERE role = ? LIMIT 1');
-    const updatePwd  = db.prepare('UPDATE users SET username = ?, name = ?, password_hash = ? WHERE id = ?');
     const insertUser = db.prepare('INSERT INTO users (id, name, username, password_hash, role) VALUES (?,?,?,?,?)');
 
     for (const u of CANONICAL) {
-      const existing = findByRole.get(u.role);
-      if (existing) {
-        const wantsUser = existing.username !== u.username;
-        const wantsPwd  = !bcrypt.compareSync(u.password, existing.password_hash);
-        if (wantsUser || wantsPwd) {
-          updatePwd.run(u.username, u.name, bcrypt.hashSync(u.password, 10), existing.id);
-          console.log(`[db] ${u.role} account refreshed: ${u.username}/${u.password}`);
-        }
-      } else {
+      const existing = findById.get(u.id) || findByRole.get(u.role);
+      if (!existing) {
         insertUser.run(u.id, u.name, u.username, bcrypt.hashSync(u.password, 10), u.role);
-        console.log(`[db] ${u.role} account created: ${u.username}/${u.password}`);
+        console.log(`[db] ${u.role} demo account created (username "${u.username}")`);
       }
     }
   }

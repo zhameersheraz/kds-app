@@ -1,4 +1,4 @@
-// ServerStatus - server's phone view of their active orders.
+﻿// ServerStatus - server's phone view of their active orders.
 // v6.3: server can cancel their own pending orders, mark ready ones as served.
 
 import React, { useEffect, useState } from 'react';
@@ -6,24 +6,20 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { useSocketEvent } from '../lib/useSocketEvent';
-import { useCurrency } from '../lib/currency';
+import { useAuth } from '../lib/store';
+import { useCurrency, fmt } from '../lib/currency';
 import { elapsedLabel } from '../lib/format';
 import { printCustomerReceipt } from '../lib/printTicket';
+import { chime } from '../lib/chime';
 import TopBar from '../components/TopBar';
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/Modal';
 import { IconPrinter } from '../components/icons';
 
-function formatMoney(n, cur) {
-  const php = Number(n || 0);
-  const display = cur.convert ? cur.convert(php) : php;
-  const s = display.toLocaleString(cur.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
-}
-
 export default function ServerStatus() {
   const toast = useToast();
   const { cur } = useCurrency();
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
@@ -31,10 +27,17 @@ export default function ServerStatus() {
   }, []);
 
   useSocketEvent('new_order', (order) => {
-    setOrders((cur) => cur.find((o) => o.id === order.id) ? cur : [order, ...cur]);
+    // The backend only emits new_order to the kitchen and admin rooms, so a
+    // server never receives these. Kept as a no-op guard rather than dead code.
+    if (order.server_id !== user?.id) return;
+    setOrders((cur) => (cur.find((o) => o.id === order.id) ? cur : [order, ...cur]));
   });
 
   useSocketEvent('order_status_update', (order) => {
+    // order_status_update is broadcast to EVERY socket, not just a role room.
+    // Without this guard, with two servers on the floor every phone chimed for
+    // every other server's tables. POS.jsx already had this check.
+    if (order.server_id !== user?.id) return;
     setOrders((cur) => {
       const i = cur.findIndex((o) => o.id === order.id);
       if (i < 0) return cur;
@@ -44,6 +47,7 @@ export default function ServerStatus() {
     });
     if (order.status === 'ready') {
       toast.success(`Table ${order.table_number} is ready`, 'Pick it up from the kitchen.');
+      chime();
     }
   });
 
@@ -81,7 +85,7 @@ export default function ServerStatus() {
             <summary className="cursor-pointer font-medium select-none">
               {past.length} completed today
             </summary>
-            <div className="mt-2 divide-y" style={{ borderColor: 'var(--line)' }}>
+            <div className="mt-2 divide-y" style={{ borderColor: 'rgb(var(--c-line))' }}>
               {past.map((o) => (
                 <div key={o.id} className="py-2 flex items-center gap-2">
                   <span className="font-display font-bold">#{o.table_number}</span>
@@ -122,7 +126,7 @@ function MyOrderRow({ order, cur, onAction }) {
         <div className="ml-auto text-xs opacity-60 flex items-center gap-2">
           <span className="mono">{elapsedLabel(order.created_at)}</span>
           <span className="opacity-30">/</span>
-          <span className="mono font-semibold">{formatMoney(order.total, cur)}</span>
+          <span className="mono font-semibold">{fmt(order.total)}</span>
         </div>
       </div>
       <ul className="mt-2 space-y-0.5 text-sm">

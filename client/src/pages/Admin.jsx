@@ -1,4 +1,4 @@
-// Admin dashboard - all orders, today's sales, top items.
+﻿// Admin dashboard - all orders, today's sales, top items.
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
@@ -6,16 +6,10 @@ import { useToast } from '../lib/toast';
 import { useSocketEvent } from '../lib/useSocketEvent';
 import TopBar from '../components/TopBar';
 import StatusBadge from '../components/StatusBadge';
-import { useCurrency } from '../lib/currency';
+import { useCurrency, fmt } from '../lib/currency';
 import { elapsedLabel } from '../lib/format';
 import { IconRefresh, IconList, IconChart } from '../components/icons';
 
-function formatMoney(n, cur) {
-  const php = Number(n || 0);
-  const display = cur.convert ? cur.convert(php) : php;
-  const s = display.toLocaleString(cur.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
-}
 
 export default function Admin() {
   const toast = useToast();
@@ -38,7 +32,7 @@ export default function Admin() {
     <div className="min-h-screen flex flex-col">
       <TopBar
         title="Admin"
-        subtitle={sales ? `${sales.totals.orders} orders today - ${formatMoney(sales.totals.revenue, cur)} revenue` : 'Loading...'}
+        subtitle={sales ? `${sales.totals.orders} orders today - ${fmt(sales.totals.revenue)} revenue` : 'Loading...'}
         right={
           <button onClick={loadAll} className="btn-ghost text-xs gap-1.5" title="Refresh">
             <IconRefresh size={14} /> Refresh
@@ -47,7 +41,7 @@ export default function Admin() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 space-y-5">
-        <nav className="flex items-center gap-6 border-b" style={{ borderColor: 'var(--line)' }}>
+        <nav className="flex items-center gap-6 border-b" style={{ borderColor: 'rgb(var(--c-line))' }}>
           <Tab active={tab === 'overview'} onClick={() => setTab('overview')} icon={<IconChart size={14} />}>Overview</Tab>
           <Tab active={tab === 'orders'}   onClick={() => setTab('orders')}   icon={<IconList size={14}  />}>Orders</Tab>
         </nav>
@@ -82,7 +76,7 @@ function Overview({ sales, cur }) {
   const { totals, byStatus, week, topItems } = sales;
   const cards = [
     { label: "Today's orders",  value: totals.orders,                       size: 'sm' },
-    { label: "Today's revenue", value: formatMoney(totals.revenue, cur),    size: 'lg' },
+    { label: "Today's revenue", value: fmt(totals.revenue),    size: 'lg' },
     { label: 'Pending now',     value: byStatus.find((b) => b.status === 'pending')?.count   || 0, size: 'sm' },
     { label: 'Preparing now',   value: byStatus.find((b) => b.status === 'preparing')?.count || 0, size: 'sm' }
   ];
@@ -120,7 +114,7 @@ function Overview({ sales, cur }) {
                   <span className="w-5 opacity-40 mono">{i + 1}.</span>
                   <span className="flex-1">{it.name}</span>
                   <span className="opacity-60 mono">{it.qty} sold</span>
-                  <span className="font-semibold mono tabular-nums">{formatMoney(it.revenue, cur)}</span>
+                  <span className="font-semibold mono tabular-nums">{fmt(it.revenue)}</span>
                 </li>
               ))}
             </ol>
@@ -182,7 +176,7 @@ function OrdersTable({ orders, status, setStatus, cur }) {
       ) : (
         <div className="card overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="text-[10px] uppercase tracking-widest opacity-60 border-b" style={{ borderColor: 'var(--line)' }}>
+            <thead className="text-[10px] uppercase tracking-widest opacity-60 border-b" style={{ borderColor: 'rgb(var(--c-line))' }}>
               <tr>
                 <th className="text-left  px-3 py-2">Table</th>
                 <th className="text-left  px-3 py-2">Server</th>
@@ -193,7 +187,7 @@ function OrdersTable({ orders, status, setStatus, cur }) {
                 <th className="text-left  px-3 py-2">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ borderColor: 'var(--line)' }}>
+            <tbody className="divide-y" style={{ borderColor: 'rgb(var(--c-line))' }}>
               {orders.map((o) => (
                 <tr key={o.id} className="hover:bg-ink/[0.02] dark:hover:bg-paper/[0.02]">
                   <td className="px-3 py-2 font-display font-bold">#{o.table_number}</td>
@@ -201,7 +195,7 @@ function OrdersTable({ orders, status, setStatus, cur }) {
                   <td className="px-3 py-2 max-w-[260px] truncate opacity-70">
                     {o.items.map((i) => `${i.qty}x ${i.name}`).join(', ')}
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold mono tabular-nums">{formatMoney(o.total, cur)}</td>
+                  <td className="px-3 py-2 text-right font-semibold mono tabular-nums">{fmt(o.total)}</td>
                   <td className="px-3 py-2"><StatusBadge status={o.status} /></td>
                   <td className="px-3 py-2 mono text-xs opacity-60">{elapsedLabel(o.created_at, o.status === 'served' ? o.updated_at : null)}</td>
                   <td className="px-3 py-2 text-xs opacity-60 mono">{(o.created_at || '').replace('T', ' ').slice(0, 16)}</td>

@@ -9,7 +9,8 @@ import TopBar from '../components/TopBar';
 import MenuGrid from '../components/MenuGrid';
 import OrderTicket from '../components/OrderTicket';
 import { useAuth } from '../lib/store';
-import { IconList, IconRefresh } from '../components/icons';
+import { chime } from '../lib/chime';
+import { IconList } from '../components/icons';
 
 let _draftId = 1;
 
@@ -31,7 +32,7 @@ export default function POS() {
     if (order.server_id !== user?.id) return;
     if (order.status === 'ready') {
       toast.success(`Table ${order.table_number} is ready`, 'Run the food to the customer.');
-      try { new Audio('/notify.mp3').play().catch(() => {}); } catch (_) {}
+      chime();
     } else if (order.status === 'served') {
       toast.info(`Table ${order.table_number} marked served`);
     }
@@ -71,7 +72,7 @@ export default function POS() {
       };
       const created = await api.createOrder(payload);
       toast.success(`Table ${created.table_number} sent`, 'Kitchen has it.');
-      try { new Audio('/notify.mp3').play().catch(() => {}); } catch (_) {}
+      chime();
       setLines([]);
       setNotes('');
       setTableNumber('');

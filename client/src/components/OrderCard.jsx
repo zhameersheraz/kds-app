@@ -1,23 +1,16 @@
-// KDS order card - paper-receipt aesthetic. Color coded by wait time only.
+﻿// KDS order card - paper-receipt aesthetic. Color coded by wait time only.
 // High contrast, no shadows, large table number for at-a-glance reading.
 // v6.3: respects viewer role - kitchen never sees a dead "Mark Served" button.
 
 import React, { useEffect, useState } from 'react';
 import { waitBucket, elapsedLabel } from '../lib/format';
-import { useCurrency } from '../lib/currency';
+import { fmt } from '../lib/currency';
 import { printKitchenTicket } from '../lib/printTicket';
 import StatusBadge from './StatusBadge';
 import { IconPrinter, IconArrowRight } from './icons';
 
-function formatMoney(n, cur) {
-  const php = Number(n || 0);
-  const display = cur.convert ? cur.convert(php) : php;
-  const s = display.toLocaleString(cur.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
-}
 
 export default function OrderCard({ order, onStatus, viewerRole }) {
-  const { cur } = useCurrency();
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((x) => x + 1), 1000);
@@ -67,7 +60,7 @@ export default function OrderCard({ order, onStatus, viewerRole }) {
         aria-hidden
       />
 
-      <header className="px-4 pt-3 pb-2 flex items-baseline justify-between border-b" style={{ borderColor: 'var(--line)' }}>
+      <header className="px-4 pt-3 pb-2 flex items-baseline justify-between border-b" style={{ borderColor: 'rgb(var(--c-line))' }}>
         <div>
           <div className="text-[10px] uppercase tracking-widest opacity-50">Table</div>
           <div className="font-display text-3xl font-bold leading-none">#{order.table_number}</div>
@@ -98,9 +91,9 @@ export default function OrderCard({ order, onStatus, viewerRole }) {
         </div>
       ) : null}
 
-      <footer className="px-4 py-2.5 border-t flex items-center justify-between gap-2" style={{ borderColor: 'var(--line)' }}>
+      <footer className="px-4 py-2.5 border-t flex items-center justify-between gap-2" style={{ borderColor: 'rgb(var(--c-line))' }}>
         <div className="flex items-center gap-3">
-          <div className="text-sm mono font-semibold">{formatMoney(order.total, cur)}</div>
+          <div className="text-sm mono font-semibold">{fmt(order.total)}</div>
           <div className="text-xs opacity-60 hidden sm:block">{order.server_name}</div>
           <button
             className="btn-quiet px-1.5 py-1 text-xs opacity-70 hover:opacity-100"

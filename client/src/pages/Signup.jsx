@@ -1,5 +1,6 @@
 // Signup page - two-column layout: illustration on the left, form on the right.
-// Open registration. First user becomes admin automatically.
+// Open registration for staff accounts. The first account on a fresh database
+// becomes admin automatically; every later signup is server or kitchen.
 // v6.1: brand link points to landing; show/hide password toggle.
 
 import React, { useState } from 'react';
@@ -7,10 +8,11 @@ import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/store';
 import { IconEye, IconEyeOff } from '../components/icons';
 
+// Admin was offered here as a one-click option, and the backend honoured it.
+// On a publicly reachable app that made every admin screen one POST away.
 const ROLES = [
   { value: 'server',  label: 'Server',  desc: 'Takes orders at the counter' },
-  { value: 'kitchen', label: 'Kitchen', desc: 'Prepares orders, marks ready' },
-  { value: 'admin',   label: 'Admin',   desc: 'Full access to all screens'  }
+  { value: 'kitchen', label: 'Kitchen', desc: 'Prepares orders, marks ready' }
 ];
 
 export default function Signup() {
@@ -87,7 +89,7 @@ export default function Signup() {
           </div>
 
           <h1 className="font-display text-4xl mb-2">New account</h1>
-          <p className="text-sm text-muted mb-8">First account created becomes the admin.</p>
+          <p className="text-sm text-muted mb-8">Creates a server or kitchen account. An admin can promote you later.</p>
 
           <form onSubmit={submit} className="space-y-5">
             <label className="block">

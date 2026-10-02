@@ -36,6 +36,49 @@ const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '1mb' }));
 
+// A malformed body used to escape as an unhandled rejection and answered with
+// an HTML stack trace, which every client then tried to parse as JSON.
+app.use((err, _req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'bad_json' });
+  }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'payload_too_large' });
+  }
+  next(err);
+});
+
+// --- Brute-force guard on the credential endpoints -------------------------
+// Small in-process limiter rather than a new dependency: the app is a single
+// Node process, so a Map is enough. Without it, /api/auth/login is an unlimited
+// password oracle against accounts whose passwords are printed in the README.
+const attempts = new Map();
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_ATTEMPTS = 10;
+
+function rateLimitAuth(req, res, next) {
+  const key = `${req.ip}:${(req.body && req.body.username) || ''}`.toLowerCase();
+  const now = Date.now();
+  const rec = attempts.get(key);
+
+  if (!rec || now - rec.first > WINDOW_MS) {
+    attempts.set(key, { count: 1, first: now });
+    return next();
+  }
+  if (rec.count >= MAX_ATTEMPTS) {
+    const retry = Math.ceil((WINDOW_MS - (now - rec.first)) / 1000);
+    return res.status(429).json({ error: 'too_many_attempts', retry_after_s: retry });
+  }
+  rec.count += 1;
+  next();
+}
+
+// Sweep expired buckets so the Map cannot grow forever.
+setInterval(() => {
+  const cutoff = Date.now() - WINDOW_MS;
+  for (const [k, v] of attempts) if (v.first < cutoff) attempts.delete(k);
+}, WINDOW_MS).unref();
+
 // Tiny request log
 app.use((req, _res, next) => {
   console.log(`[api] ${req.method} ${req.url}`);
@@ -43,7 +86,7 @@ app.use((req, _res, next) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
-app.use('/api/auth',    authRoutes);
+app.use('/api/auth',    rateLimitAuth, authRoutes);
 app.use('/api/orders',  orderRoutes);
 app.use('/api/menu',    menuRoutes);
 app.use('/api/reports', reportRoutes);
@@ -57,6 +100,19 @@ if (fs.existsSync(clientDist)) {
 } else {
   console.log('[srv] no client build found at', clientDist, '- run `npm --prefix client run build` to enable static serving.');
 }
+
+// Terminal error handler. Must be registered after every route, otherwise it
+// only ever sees express.json() failures. Without this, a constraint violation
+// deep in a route answered with an HTML stack trace and a 500.
+app.use((err, _req, res, _next) => {
+  const msg = String((err && err.message) || '');
+  if (msg.includes('FOREIGN KEY') || msg.includes('UNIQUE constraint') || msg.includes('CHECK constraint')) {
+    console.error('[srv] db constraint violation:', msg);
+    return res.status(400).json({ error: 'db_constraint', detail: msg });
+  }
+  console.error('[srv] unhandled error:', err);
+  res.status(500).json({ error: 'internal_error' });
+});
 
 const server = http.createServer(app);
 const io = new IOServer(server, {
@@ -108,7 +164,5 @@ app.locals.broadcast = (event, payload) => {
 };
 
 server.listen(PORT, HOST, () => {
-  const lan = server.address();
   console.log(`[srv] kds-api listening on http://${HOST}:${PORT}`);
-  console.log(`[srv] LAN URL hint: open the client with the API base set to this address.`);
 });

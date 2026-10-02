@@ -4,3 +4,10 @@ dist
 .env
 server/data/*.db*
 .DS_Store
+
+# Stray process output that used to get committed
+server/server.err
+server/*.out
+*.err
+*.out
+buildlog.txt

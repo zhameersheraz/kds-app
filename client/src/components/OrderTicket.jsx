@@ -1,23 +1,18 @@
 // Order ticket (right side of POS). Running list, paper-form style.
 
 import React, { useState } from 'react';
-import { useCurrency } from '../lib/currency';
+import { fmt } from '../lib/currency';
 import { IconPlus, IconMinus, IconClose } from './icons';
 
-function formatMoney(n, cur) {
-  const php = Number(n || 0);
-  const display = cur.convert ? cur.convert(php) : php;
-  const s = display.toLocaleString(cur.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
-}
-
 export default function OrderTicket({ tableNumber, setTableNumber, lines, setLines, notes, setNotes, onSubmit, busy }) {
-  const { cur } = useCurrency();
   const [confirming, setConfirming] = useState(false);
 
+  // The server records total = SUM(price * qty). This screen used to add an
+  // 8% tax on top, so the server quoted the customer one number and the order
+  // was stored, printed and reported as a different one. Show the same maths
+  // the backend will store.
   const subtotal = lines.reduce((acc, l) => acc + l.qty * l.price, 0);
-  const tax = subtotal * 0.08;
-  const total = subtotal + tax;
+  const total = subtotal;
   const empty = lines.length === 0;
   const valid = !!tableNumber && !empty;
 
@@ -39,7 +34,7 @@ export default function OrderTicket({ tableNumber, setTableNumber, lines, setLin
 
   return (
     <aside className="card flex flex-col h-full overflow-hidden">
-      <div className="px-4 py-3 border-b space-y-3" style={{ borderColor: 'var(--line)' }}>
+      <div className="px-4 py-3 border-b space-y-3" style={{ borderColor: 'rgb(var(--c-line))' }}>
         <label className="block">
           <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Table or customer</span>
           <input
@@ -68,9 +63,9 @@ export default function OrderTicket({ tableNumber, setTableNumber, lines, setLin
           </div>
         ) : (
           lines.map((l, i) => (
-            <div key={l.id} className="border-b pb-3" style={{ borderColor: 'var(--line)' }}>
+            <div key={l.id} className="border-b pb-3" style={{ borderColor: 'rgb(var(--c-line))' }}>
               <div className="flex items-center gap-2">
-                <div className="flex items-center border" style={{ borderColor: 'var(--line)' }}>
+                <div className="flex items-center border" style={{ borderColor: 'rgb(var(--c-line))' }}>
                   <button
                     className="px-2 py-1 hover:bg-ink/5 dark:hover:bg-paper/5"
                     onClick={() => setQty(i, l.qty - 1)}
@@ -85,10 +80,10 @@ export default function OrderTicket({ tableNumber, setTableNumber, lines, setLin
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium leading-snug truncate">{l.name}</div>
-                  <div className="text-[11px] opacity-60 mono">{formatMoney(l.price, cur)} each</div>
+                  <div className="text-[11px] opacity-60 mono">{fmt(l.price)} each</div>
                 </div>
                 <div className="text-sm mono font-semibold tabular-nums">
-                  {formatMoney(l.price * l.qty, cur)}
+                  {fmt(l.price * l.qty)}
                 </div>
                 <button
                   className="opacity-40 hover:opacity-100 hover:text-accent"
@@ -107,19 +102,15 @@ export default function OrderTicket({ tableNumber, setTableNumber, lines, setLin
         )}
       </div>
 
-      <div className="px-4 py-3 border-t space-y-2" style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}>
+      <div className="px-4 py-3 border-t space-y-2" style={{ borderColor: 'rgb(var(--c-line))', background: 'rgb(var(--c-paper))' }}>
         <div className="flex justify-between text-sm">
           <span className="opacity-60">Subtotal</span>
-          <span className="mono">{formatMoney(subtotal, cur)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="opacity-60">Tax 8%</span>
-          <span className="mono">{formatMoney(tax, cur)}</span>
+          <span className="mono">{fmt(subtotal)}</span>
         </div>
         <div className="rule my-1" />
         <div className="flex justify-between text-lg font-display font-bold">
           <span>Total</span>
-          <span className="mono">{formatMoney(total, cur)}</span>
+          <span className="mono">{fmt(total)}</span>
         </div>
 
         <div className="flex gap-2 pt-2">

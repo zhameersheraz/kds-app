@@ -1,18 +1,10 @@
 // Menu grid for the POS. Categories on top, item cards under with line-art image.
 
 import React, { useMemo, useState } from 'react';
-import { useCurrency } from '../lib/currency';
+import { fmt } from '../lib/currency';
 import ProductImage from './ProductImage';
 
-function formatMoney(n, cur) {
-  const php = Number(n || 0);
-  const display = cur.convert ? cur.convert(php) : php;
-  const s = display.toLocaleString(cur.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return cur.code === 'PHP' ? 'PHP ' + s : cur.symbol + s;
-}
-
 export default function MenuGrid({ items, onAdd }) {
-  const { cur } = useCurrency();
   const categories = useMemo(() => {
     const seen = new Set();
     const out = [];
@@ -22,22 +14,30 @@ export default function MenuGrid({ items, onAdd }) {
     return out;
   }, [items]);
 
-  const [active, setActive] = useState(categories[0] || '');
+  const [active, setActive] = useState('');
+
+  // `useState(categories[0] || '')` froze the initializer on the first render,
+  // and the menu is fetched in an effect, so on that first render `categories`
+  // was still []. `active` stayed '' forever and the POS opened to a completely
+  // empty menu saying "No items in this category." Derive the fallback at
+  // render time instead of latching it into state.
+  const current = active && categories.includes(active) ? active : (categories[0] || '');
+
   const visible = useMemo(
-    () => items.filter((i) => i.category === active && i.available),
-    [items, active]
+    () => items.filter((i) => i.category === current && i.available),
+    [items, current]
   );
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-4 border-b mb-4 overflow-x-auto -mx-1 px-1" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex gap-4 border-b mb-4 overflow-x-auto -mx-1 px-1" style={{ borderColor: 'rgb(var(--c-line))' }}>
         {categories.map((c) => (
           <button
             key={c}
             onClick={() => setActive(c)}
             className={
               'pb-2 -mb-px text-sm font-medium uppercase tracking-wider transition ' +
-              (c === active
+              (c === current
                 ? 'border-b-2 border-accent text-current'
                 : 'border-b-2 border-transparent opacity-50 hover:opacity-100')
             }
@@ -61,7 +61,7 @@ export default function MenuGrid({ items, onAdd }) {
             {it.description ? (
               <div className="text-[11px] opacity-60 line-clamp-2 mt-0.5">{it.description}</div>
             ) : null}
-            <div className="mt-2 text-sm font-semibold mono">{formatMoney(it.price, cur)}</div>
+            <div className="mt-2 text-sm font-semibold mono">{fmt(it.price)}</div>
           </button>
         ))}
         {visible.length === 0 ? (

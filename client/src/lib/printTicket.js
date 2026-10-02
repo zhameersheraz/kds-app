@@ -28,9 +28,13 @@ export function printCustomerReceipt(order) {
 }
 
 function renderHTML(order, kind, cur) {
+  // The server stores the authoritative total (orders.total). Recomputing it
+  // here and adding an 8% tax the backend never records meant a PHP 1,000 order
+  // showed PHP 1,000.00 on the KDS, on the server's phone and in the admin
+  // sales report, but the customer's paper receipt said PHP 1,080.00.
+  // Always print what was recorded.
   const subtotal = order.items.reduce((acc, it) => acc + it.price * it.qty, 0);
-  const tax = subtotal * 0.08;
-  const total = subtotal + tax;
+  const total = Number(order.total ?? subtotal);
   const now = new Date();
   const dateStr = now.toLocaleString();
   const title = kind === 'kitchen' ? 'KITCHEN TICKET' : 'CUSTOMER RECEIPT';
@@ -89,7 +93,6 @@ function renderHTML(order, kind, cur) {
   <hr />
   ${kind === 'customer' ? `
     <div class="row"><span>Subtotal</span><span>${money(subtotal, cur)}</span></div>
-    <div class="row"><span>Tax (8%)</span><span>${money(tax, cur)}</span></div>
     <div class="row total"><span>TOTAL</span><span>${money(total, cur)}</span></div>
     <hr />
     <div class="center bold">Thank you</div>

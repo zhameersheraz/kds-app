@@ -26,7 +26,7 @@ Live demo: **https://kds-app-5d6v.onrender.com**
 |---------------|-----------------|----------------------------------------------------|
 | Landing       | `/landing`      | Public intro, hero, how-it-works, features. No login. |
 | Sign in       | `/login`        | Username + password. Show/hide password eye.       |
-| Sign up       | `/signup`       | Open registration. Pick a role. First user = admin.|
+| Sign up       | `/signup`       | Open registration. Server or kitchen. The first account on a fresh database is admin.|
 | POS           | `/pos`          | Server takes orders. Menu grid + cart + send to kitchen. |
 | My tables     | `/server-status`| Server's view of their own active orders. Cancel own pending, mark ready as served. |
 | KDS           | `/kds`          | Kitchen display. Three side-by-side rails (Pending / Preparing / Ready). Wait-time color bar, chime on new orders. |
@@ -50,8 +50,59 @@ Plus:
 | Server  | `server`  | `ServerPass!2026-KDS`   | `/pos`   |
 | Kitchen | `kitchen` | `KitchenPass!2026-KDS`  | `/kds`   |
 
-Click any row on the login screen to autofill. Sign up more accounts at
-`/signup` if you want to test a multi-server / multi-kitchen flow.
+Click any row on the login screen to autofill. The quick-fill panel only renders
+in a development build, so the passwords above are not shipped inside the
+production JavaScript bundle. Sign up more accounts at `/signup` if you want to
+test a multi-server / multi-kitchen flow.
+
+> These three accounts are seeded automatically and their passwords are written
+> in this file, so treat them as public. For anything other than a local demo,
+> set `KDS_SEED_DEMO=false` in `server/.env`, which stops the server creating
+> them, and make your own accounts. The old version also reset these passwords
+> on every boot, which made changing the admin password impossible; it now only
+> creates accounts that are missing and never overwrites an existing one.
+
+## Security
+
+Before putting this anywhere public, read this section. A few things were
+hardened in v6.4, and a few things are your job.
+
+Handled:
+
+- **The JWT signing key is no longer a hardcoded fallback.** It used to fall
+  back to the literal `kds-dev-secret-change-me`, which is public in the git
+  history, so anyone could mint a token with `role: "admin"` and the server
+  accepted it. In production the server now refuses to start without
+  `JWT_SECRET`. In development it generates a random per-boot key and warns.
+- **Public signup can no longer create an admin.** `POST /api/auth/signup`
+  honoured the `role` field from the request body, so `role: "admin"` in one
+  POST gave a full admin account on a publicly reachable app. Signup now only
+  grants `server` or `kitchen`; the first account on an empty database is
+  still admin so a fresh deploy is usable.
+- **Demo passwords are no longer reset on every boot.** The old seed migration
+  compared each stored hash against the demo password and overwrote it on any
+  mismatch, which silently undid any password change on the next restart.
+- **Login is rate limited.** 10 attempts per IP and username per 15 minutes,
+  then `429`.
+- **Order input is bounded.** Quantity is 1-99 and capped at 50 lines per
+  order. `qty: 1000000` previously produced a PHP 220,000,000 ticket.
+  `?limit=-1` on the admin history query previously meant "no limit".
+- **Prices must be finite and non-negative.** `price: -500` was accepted.
+- **Malformed JSON returns JSON.** A bad request body used to answer with an
+  HTML stack trace.
+
+Your job:
+
+1. Set a real `JWT_SECRET` and change the `CORS_ORIGIN` from `*`.
+2. Rotate the demo passwords, or set `KDS_SEED_DEMO=false` and drop the
+   accounts. The defaults are in this README and in the git history, so they
+   are not secret.
+3. Remember the old signing key is compromised. Any token signed with it is
+   still valid for up to 12 hours, so restart the process after deploying.
+
+Money is stored as a SQLite `REAL`, so totals can drift by a fraction of a
+cent over many orders. It is fine for a demo and for whole-peso pricing. If
+this ever takes real money, move prices and totals to integer centavos.
 
 ## What each role can do
 

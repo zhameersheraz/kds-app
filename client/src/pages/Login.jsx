@@ -6,11 +6,18 @@ import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/store';
 import { IconEye, IconEyeOff } from '../components/icons';
 
-const DEMO = [
-  { role: 'Server',  username: 'server',  password: 'ServerPass!2026-KDS' },
-  { role: 'Kitchen', username: 'kitchen', password: 'KitchenPass!2026-KDS' },
-  { role: 'Admin',   username: 'zham',    password: 'ZhamAdmin!2026-KDS'  }
-];
+// These were rendered unconditionally, which shipped every seeded password
+// inside the production JS bundle for anyone who opened devtools. The quick
+// fill is a local-development affordance, so it is dev-only now. A public
+// deployment should also set KDS_SEED_DEMO=false on the server and create real
+// accounts, since the defaults are printed in the README.
+const DEMO = import.meta.env.DEV
+  ? [
+      { role: 'Server',  username: 'server',  password: 'ServerPass!2026-KDS' },
+      { role: 'Kitchen', username: 'kitchen', password: 'KitchenPass!2026-KDS' },
+      { role: 'Admin',   username: 'zham',    password: 'ZhamAdmin!2026-KDS'  }
+    ]
+  : [];
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -33,7 +40,9 @@ export default function Login() {
     setErr(null);
     setBusy(true);
     try {
-      await login(username.trim(), password);
+      // Signup normalises to lowercase, so login has to as well. Otherwise a
+      // user who registered as "Juan" could never sign back in as "Juan".
+      await login(username.trim().toLowerCase(), password);
       nav('/');
     } catch (_) {
       setErr('Invalid credentials');
@@ -112,21 +121,25 @@ export default function Login() {
           No account yet? <Link to="/signup" className="text-accent underline underline-offset-2">Create one</Link>
         </p>
 
-        <div className="my-8 border-t border-line" />
-        <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts (click to fill)</div>
-        <div className="grid grid-cols-3 gap-2">
-          {DEMO.map((p) => (
-            <button
-              key={p.username}
-              type="button"
-              onClick={() => quick(p)}
-              className="border border-line px-2 py-2 text-left hover:border-ink transition"
-            >
-              <div className="text-[11px] font-semibold uppercase tracking-wider">{p.role}</div>
-              <div className="text-[11px] text-muted mono">{p.username}</div>
-            </button>
-          ))}
-        </div>
+        {DEMO.length > 0 ? (
+          <>
+            <div className="my-8 border-t border-line" />
+            <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Demo accounts (click to fill)</div>
+            <div className="grid grid-cols-3 gap-2">
+              {DEMO.map((p) => (
+                <button
+                  key={p.username}
+                  type="button"
+                  onClick={() => quick(p)}
+                  className="border border-line px-2 py-2 text-left hover:border-ink transition"
+                >
+                  <div className="text-[11px] font-semibold uppercase tracking-wider">{p.role}</div>
+                  <div className="text-[11px] text-muted mono">{p.username}</div>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

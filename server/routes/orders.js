@@ -25,6 +25,9 @@ const { verify, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 const STALE_MINUTES = parseInt(process.env.STALE_PENDING_MINUTES || '30', 10);
+const MAX_QTY_PER_LINE = 99;
+const MAX_LINES_PER_ORDER = 50;
+const MAX_HISTORY_LIMIT = 500;
 
 function autoCancelStale() {
   // Anything still 'pending' for over STALE_MINUTES gets cancelled.
@@ -70,6 +73,8 @@ router.post('/', verify, requireRole('server', 'admin'), (req, res) => {
   if (!tableNumber) return res.status(400).json({ error: 'missing_table' });
   if (!Array.isArray(items) || items.length === 0)
     return res.status(400).json({ error: 'empty_order' });
+  if (items.length > MAX_LINES_PER_ORDER)
+    return res.status(400).json({ error: 'too_many_lines', max: MAX_LINES_PER_ORDER });
 
   // Resolve items + prices from menu (server cannot inject prices).
   const ids = items.map((i) => i.menuItemId).filter(Boolean);
@@ -85,7 +90,18 @@ router.post('/', verify, requireRole('server', 'admin'), (req, res) => {
   for (const it of items) {
     const m = menuMap.get(it.menuItemId);
     if (!m) return res.status(400).json({ error: 'unknown_item', id: it.menuItemId });
-    const qty = Math.max(1, parseInt(it.qty, 10) || 1);
+
+    // Bounded, and an explicit integer. `Math.max(1, parseInt(qty) || 1)` on
+    // its own accepted qty:1000000, which booked a 220,000,000 ticket.
+    const qty = Number(it.qty ?? 1);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY_PER_LINE) {
+      return res.status(400).json({
+        error: 'bad_qty',
+        max: MAX_QTY_PER_LINE,
+        got: it.qty
+      });
+    }
+
     const linePrice = m.price * qty;
     total += linePrice;
     resolved.push({
@@ -163,7 +179,13 @@ router.get('/all', verify, requireRole('admin'), (req, res) => {
     params.push(status);
   }
   sql += ' ORDER BY created_at DESC LIMIT ?';
-  params.push(parseInt(limit, 10) || 200);
+  // Clamped. `parseInt(limit) || 200` let limit=-1 through, and SQLite reads
+  // a negative LIMIT as "no limit", so one request could dump the whole table.
+  const wanted = parseInt(limit, 10);
+  const capped = Number.isFinite(wanted) && wanted > 0
+    ? Math.min(wanted, MAX_HISTORY_LIMIT)
+    : 200;
+  params.push(capped);
   const rows = db.prepare(sql).all(...params);
   res.json(rows.map((o) => hydrateOrder(o.id)));
 });
@@ -202,9 +224,21 @@ router.patch('/:id/status', verify, (req, res) => {
     return res.status(409).json({ error: 'invalid_transition', from: order.status, to: next });
   }
 
-  db.prepare(
-    `UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?`
-  ).run(next, req.params.id);
+  // Re-assert the current status in the WHERE clause. The role checks and the
+  // transition check above both read the row, so two kitchen tablets hitting
+  // "ready" at the same instant could both pass them and both write. Making the
+  // UPDATE conditional means the loser gets changes=0 instead of silently
+  // double-advancing the ticket.
+  const upd = db
+    .prepare(
+      `UPDATE orders SET status = ?, updated_at = datetime('now')
+       WHERE id = ? AND status = ?`
+    )
+    .run(next, req.params.id, order.status);
+
+  if (upd.changes === 0) {
+    return res.status(409).json({ error: 'conflict', message: 'order changed status, retry' });
+  }
 
   const full = hydrateOrder(req.params.id);
   req.app.locals.broadcast('order_status_update', full);

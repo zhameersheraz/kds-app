@@ -1,4 +1,4 @@
-// KDS - kitchen display. Three status rails (pending / preparing / ready) side-by-side on wide screens,
+﻿// KDS - kitchen display. Three status rails (pending / preparing / ready) side-by-side on wide screens,
 // stacked on tablets/mobile. Each rail is its own column with a header.
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/store';
 import { useToast } from '../lib/toast';
 import { useSocketEvent } from '../lib/useSocketEvent';
+import { chime } from '../lib/chime';
 import TopBar from '../components/TopBar';
 import OrderCard from '../components/OrderCard';
 import { IconRefresh } from '../components/icons';
@@ -153,25 +154,4 @@ function RailEmpty({ label }) {
       {label}
     </div>
   );
-}
-
-// Web Audio "ding" - no asset files.
-let _ctx = null;
-function chime(times = 1) {
-  try {
-    _ctx = _ctx || new (window.AudioContext || window.webkitAudioContext)();
-    const now = _ctx.currentTime;
-    for (let i = 0; i < times; i++) {
-      const t = now + i * 0.25;
-      const o = _ctx.createOscillator();
-      const g = _ctx.createGain();
-      o.frequency.setValueAtTime(times > 1 ? 880 : 660, t);
-      o.frequency.exponentialRampToValueAtTime(times > 1 ? 1320 : 880, t + 0.18);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-      o.connect(g); g.connect(_ctx.destination);
-      o.start(t); o.stop(t + 0.45);
-    }
-  } catch (_) {}
 }
