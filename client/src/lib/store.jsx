@@ -22,9 +22,21 @@ export function AuthProvider({ children }) {
           setUser(user);
           connectSocket(token);
         }
-      } catch (_) {
-        localStorage.removeItem('kds_token');
-        if (!cancelled) { setToken(null); setUser(null); }
+      } catch (e) {
+        // Only a rejected token means "log out". This used to clear localStorage
+        // on any failure at all, so a 429, a 500 or a dropped connection threw
+        // away a perfectly valid 12 hour session and bounced staff to the
+        // landing page. A token the server refused is a 401 or 403; everything
+        // else is a transient fault and the token is still good.
+        const rejected = e && (e.status === 401 || e.status === 403);
+        if (!cancelled && rejected) {
+          localStorage.removeItem('kds_token');
+          setToken(null);
+          setUser(null);
+        }
+        if (!cancelled && !rejected) {
+          console.warn('[auth] could not verify session, keeping the stored token', e);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

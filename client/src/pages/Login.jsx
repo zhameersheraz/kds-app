@@ -72,7 +72,12 @@ export default function Login() {
         <form onSubmit={submit} className="space-y-5">
           <label className="block">
             <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Username</span>
+            {/* name and id were missing, so nothing here was fillable by a
+                password manager or by Chrome's own autofill. */}
             <input
+              id="username"
+              name="username"
+              autoComplete="username"
               className="input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -86,6 +91,9 @@ export default function Login() {
             <span className="block text-[10px] uppercase tracking-widest text-muted mb-1">Password</span>
             <div className="relative">
               <input
+                id="password"
+                name="password"
+                autoComplete="current-password"
                 type={showPw ? 'text' : 'password'}
                 className="input pr-10"
                 value={password}

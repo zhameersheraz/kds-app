@@ -86,7 +86,19 @@ app.use((req, _res, next) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
-app.use('/api/auth',    rateLimitAuth, authRoutes);
+
+// The limiter goes on the credential POSTs only.
+//
+// It used to be mounted on the whole /api/auth router, which meant
+// GET /api/auth/me spent a slot too. That call fires after every successful
+// login (setToken re-runs the restore effect), so a shift of staff signing in
+// and out burned the whole budget on token checks and never on a password
+// guess. Once the budget was gone, /me answered 429 and the client, which
+// treats any failure as a dead token, wiped everyone's session and bounced them
+// to /landing. The guard was protecting the wrong thing and breaking login.
+app.post('/api/auth/login',  rateLimitAuth);
+app.post('/api/auth/signup', rateLimitAuth);
+app.use('/api/auth', authRoutes);
 app.use('/api/orders',  orderRoutes);
 app.use('/api/menu',    menuRoutes);
 app.use('/api/reports', reportRoutes);
