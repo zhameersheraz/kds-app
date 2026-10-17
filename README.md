@@ -248,7 +248,6 @@ kds-app/
 |   +-- src/index.css               # CSS variables + base styles
 +-- README.md
 +-- DEPLOY.md
-+-- render.yaml                     # Render service config (auto)
 ```
 
 ## REST API
@@ -310,7 +309,7 @@ rm -rf server/data
 
 ## Notes for the report
 
-- Zero external runtime services. Runs on a laptop. Deploy is one `render.yaml` away.
+- Zero external runtime services. Runs on a laptop. Deploy is one Render web service away, see **[DEPLOY.md](./DEPLOY.md)**.
 - Socket.IO falls back to long-polling if WebSockets are blocked.
 - Web Audio API used for kitchen alerts - no audio asset files.
 - All timestamps in SQLite are UTC; client formats elapsed durations locally.
